@@ -1,0 +1,14 @@
+// Resistor: two-terminal passive component
+
+component Resistor {
+    pins {
+        1: Passive as A
+        2: Passive as B
+    }
+
+    attributes {
+        resistance:   Resistance
+        tolerance:    Percentage = 5%
+        power_rating: Power = 0.25W
+    }
+}

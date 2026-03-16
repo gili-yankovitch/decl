@@ -1,0 +1,14 @@
+// LED: two-terminal diode component
+
+component LED {
+    pins {
+        1: Passive as anode
+        2: Passive as cathode
+    }
+
+    attributes {
+        forward_voltage: Voltage = 2V
+        max_current:     Current = 20mA
+        color:           Color
+    }
+}

@@ -1,0 +1,14 @@
+// Inductor: two-terminal passive component
+
+component Inductor {
+    pins {
+        1: Passive as A
+        2: Passive as B
+    }
+
+    attributes {
+        inductance:     Inductance
+        current_rating: Current = 1A
+        resistance_dc:  Resistance = 0ohm
+    }
+}

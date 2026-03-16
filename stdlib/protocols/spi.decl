@@ -1,0 +1,31 @@
+// SPI (Serial Peripheral Interface) protocol definition
+
+protocol SPI {
+    lines {
+        MOSI
+        MISO
+        CLK
+        SS
+    }
+
+    role master {
+        MOSI: Output
+        MISO: Input
+        CLK:  Output
+        SS:   Output
+    }
+
+    role slave {
+        MOSI: Input
+        MISO: Output
+        CLK:  Input
+        SS:   Input
+    }
+
+    rules {
+        master.MOSI -- slave.MOSI
+        slave.MISO  -- master.MISO
+        master.CLK  -- slave.CLK
+        master.SS   -- slave.SS
+    }
+}

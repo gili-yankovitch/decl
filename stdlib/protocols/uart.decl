@@ -1,0 +1,18 @@
+// UART (Universal Asynchronous Receiver-Transmitter) protocol definition
+
+protocol UART {
+    lines {
+        TX
+        RX
+    }
+
+    role endpoint {
+        TX: Output
+        RX: Input
+    }
+
+    rules {
+        // TX of one endpoint connects to RX of the other
+        endpoint.TX -- endpoint.RX
+    }
+}

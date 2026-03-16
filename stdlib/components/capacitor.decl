@@ -1,0 +1,13 @@
+// Capacitor: two-terminal passive component
+
+component Capacitor {
+    pins {
+        1: Passive as positive
+        2: Passive as negative
+    }
+
+    attributes {
+        capacitance:    Capacitance
+        voltage_rating: Voltage = 50V
+    }
+}

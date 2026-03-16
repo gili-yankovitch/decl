@@ -1,0 +1,24 @@
+// Power distribution protocol definition
+
+protocol Power {
+    lines {
+        VCC
+        GND
+    }
+
+    role source {
+        VCC: PowerOutput
+        GND: Passive
+    }
+
+    role sink {
+        VCC: PowerInput
+        GND: Passive
+    }
+
+    rules {
+        source.VCC -- sink.VCC
+        source.GND -- sink.GND
+        common GND
+    }
+}

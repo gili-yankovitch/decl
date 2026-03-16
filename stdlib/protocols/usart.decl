@@ -1,0 +1,37 @@
+// USART (Universal Synchronous/Asynchronous Receiver-Transmitter) protocol
+// Supports full-duplex async, synchronous one-way, and half-duplex single-wire.
+// Optional hardware flow control via CTS/RTS.
+
+protocol USART {
+    lines {
+        TX
+        RX
+        CK
+        CTS
+        RTS
+    }
+
+    role endpoint {
+        TX:  Output
+        RX:  Input
+        CK:  Output
+        CTS: Input
+        RTS: Output
+    }
+
+    role peer {
+        TX:  Output
+        RX:  Input
+        CK:  Input
+        CTS: Input
+        RTS: Output
+    }
+
+    rules {
+        endpoint.TX  -- peer.RX
+        peer.TX      -- endpoint.RX
+        endpoint.CK  -- peer.CK
+        endpoint.RTS -- peer.CTS
+        peer.RTS     -- endpoint.CTS
+    }
+}

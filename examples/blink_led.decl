@@ -1,0 +1,193 @@
+// Blink LED example
+// A minimal ATmega328P circuit that drives an LED through a resistor,
+// with SPI flash and bypass capacitor.
+
+// ---- Protocols ----
+
+protocol SPI {
+    lines {
+        MOSI
+        MISO
+        CLK
+        SS
+    }
+
+    role master {
+        MOSI: Output
+        MISO: Input
+        CLK:  Output
+        SS:   Output
+    }
+
+    role slave {
+        MOSI: Input
+        MISO: Output
+        CLK:  Input
+        SS:   Input
+    }
+
+    rules {
+        master.MOSI -- slave.MOSI
+        slave.MISO  -- master.MISO
+        master.CLK  -- slave.CLK
+        master.SS   -- slave.SS
+    }
+}
+
+// ---- Components ----
+
+component Resistor {
+    pins {
+        1: Passive as A
+        2: Passive as B
+    }
+
+    attributes {
+        resistance:   Resistance
+        tolerance:    Percentage = 5%
+        power_rating: Power = 0.25W
+    }
+}
+
+component Capacitor {
+    pins {
+        1: Passive as positive
+        2: Passive as negative
+    }
+
+    attributes {
+        capacitance:    Capacitance
+        voltage_rating: Voltage = 50V
+    }
+}
+
+component LED {
+    pins {
+        1: Passive as anode
+        2: Passive as cathode
+    }
+
+    attributes {
+        forward_voltage: Voltage = 2V
+        max_current:     Current = 20mA
+        color:           Color
+    }
+}
+
+component ATmega328P {
+    pins {
+        1:  PowerInput    as RESET
+        2:  Bidirectional as PD0
+        3:  Bidirectional as PD1
+        4:  Bidirectional as PD2
+        5:  Bidirectional as PD3
+        6:  Bidirectional as PD4
+        7:  PowerInput    as VCC
+        8:  PowerInput    as GND
+        9:  Bidirectional as PB6
+        10: Bidirectional as PB7
+        11: Bidirectional as PD5
+        12: Bidirectional as PD6
+        13: Bidirectional as PD7
+        14: Bidirectional as PB0
+        15: Bidirectional as PB1
+        16: Bidirectional as PB2
+        17: Bidirectional as PB3
+        18: Bidirectional as PB4
+        19: Bidirectional as PB5
+        20: PowerInput    as AVCC
+        21: Passive       as AREF
+        22: PowerInput    as GND2
+        23: Bidirectional as PC0
+        24: Bidirectional as PC1
+        25: Bidirectional as PC2
+        26: Bidirectional as PC3
+        27: Bidirectional as PC4
+        28: Bidirectional as PC5
+    }
+
+    features {
+        internal clock {
+            frequency: 8MHz
+        }
+
+        internal flash {
+            size: 32kB
+        }
+
+        external SPI using protocol SPI role master {
+            MOSI -> pin 17
+            MISO -> pin 18
+            CLK  -> pin 19
+            SS   -> pin 16
+        }
+    }
+
+    attributes {
+        voltage_range: VoltageRange(1.8V, 5.5V)
+    }
+}
+
+component W25Q32 {
+    pins {
+        1: Input       as CS
+        2: Output      as DO
+        3: Unconnected as WP
+        4: PowerInput  as GND
+        5: Input       as DI
+        6: Input       as CLK
+        7: Unconnected as HOLD
+        8: PowerInput  as VCC
+    }
+
+    features {
+        internal flash {
+            size: 4MB
+        }
+
+        external SPI using protocol SPI role slave {
+            SS   -> pin 1
+            MISO -> pin 2
+            MOSI -> pin 5
+            CLK  -> pin 6
+        }
+    }
+}
+
+// ---- Schematic ----
+
+schematic BlinkLED {
+    // Component instances
+    instance mcu:       ATmega328P
+    instance r1:        Resistor   { resistance = 220ohm }
+    instance led:       LED        { color = "red" }
+    instance c_bypass:  Capacitor  { capacitance = 100nF }
+    instance flash:     W25Q32
+
+    // Named nets
+    net VCC_3V3
+    net GND
+
+    // LED circuit: MCU PD0 -> resistor -> LED -> GND
+    connect r1.A        -- mcu.PD0
+    connect r1.B        -- led.anode
+    connect led.cathode -- net GND
+
+    // Power connections
+    connect mcu.VCC     -- net VCC_3V3
+    connect mcu.GND     -- net GND
+    connect mcu.AVCC    -- net VCC_3V3
+    connect mcu.GND2    -- net GND
+    connect flash.VCC   -- net VCC_3V3
+    connect flash.GND   -- net GND
+
+    // Bypass cap across power rails
+    connect c_bypass.positive -- net VCC_3V3
+    connect c_bypass.negative -- net GND
+
+    // SPI bus: MCU (master) <-> Flash (slave)
+    wire SPI {
+        master: mcu
+        slave:  flash
+    }
+}

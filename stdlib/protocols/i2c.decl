@@ -1,0 +1,23 @@
+// I2C (Inter-Integrated Circuit) protocol definition
+
+protocol I2C {
+    lines {
+        SDA
+        SCL
+    }
+
+    role master {
+        SDA: Bidirectional
+        SCL: Output
+    }
+
+    role slave {
+        SDA: Bidirectional
+        SCL: Input
+    }
+
+    rules {
+        master.SDA -- slave.SDA
+        master.SCL -- slave.SCL
+    }
+}
