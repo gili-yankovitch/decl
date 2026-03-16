@@ -2,77 +2,12 @@
 // A minimal ATmega328P circuit that drives an LED through a resistor,
 // with SPI flash and bypass capacitor.
 
-// ---- Protocols ----
-
-protocol SPI {
-    lines {
-        MOSI
-        MISO
-        CLK
-        SS
-    }
-
-    role master {
-        MOSI: Output
-        MISO: Input
-        CLK:  Output
-        SS:   Output
-    }
-
-    role slave {
-        MOSI: Input
-        MISO: Output
-        CLK:  Input
-        SS:   Input
-    }
-
-    rules {
-        master.MOSI -- slave.MOSI
-        slave.MISO  -- master.MISO
-        master.CLK  -- slave.CLK
-        master.SS   -- slave.SS
-    }
-}
+import "../stdlib/protocols/spi.decl"
+import "../stdlib/components/resistor.decl"
+import "../stdlib/components/capacitor.decl"
+import "../stdlib/components/led.decl"
 
 // ---- Components ----
-
-component Resistor {
-    pins {
-        1: Passive as A
-        2: Passive as B
-    }
-
-    attributes {
-        resistance:   Resistance
-        tolerance:    Percentage = 5%
-        power_rating: Power = 0.25W
-    }
-}
-
-component Capacitor {
-    pins {
-        1: Passive as positive
-        2: Passive as negative
-    }
-
-    attributes {
-        capacitance:    Capacitance
-        voltage_rating: Voltage = 50V
-    }
-}
-
-component LED {
-    pins {
-        1: Passive as anode
-        2: Passive as cathode
-    }
-
-    attributes {
-        forward_voltage: Voltage = 2V
-        max_current:     Current = 20mA
-        color:           Color
-    }
-}
 
 component ATmega328P {
     pins {

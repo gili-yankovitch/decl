@@ -353,6 +353,13 @@ class Parser:
 
     def _parse_pin_mapping(self) -> PinMapping:
         loc = self._loc()
+        # Pin-number-first form: NUMBER -> IDENT (e.g. 3 -> DI)
+        if self._at(TokenType.NUMBER):
+            num_tok = self._eat(TokenType.NUMBER)
+            self._eat(TokenType.ARROW)
+            line_name = self._expect_ident()
+            return PinMapping(line_name=line_name, pin_number=int(num_tok.value), loc=loc)
+        # Line-name-first form: IDENT -> pin (NUMBER | IDENT) (e.g. MOSI -> pin 17)
         line_name = self._expect_ident()
         self._eat(TokenType.ARROW)
         self._eat(TokenType.KW_PIN)

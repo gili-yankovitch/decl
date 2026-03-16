@@ -171,6 +171,7 @@ internal_feature = "internal" IDENT "{" { attr_assign } "}"
 external_feature = "external" IDENT "using" "protocol" IDENT "role" IDENT
                    "{" { pin_mapping } "}"
 pin_mapping     = IDENT "->" "pin" ( NUMBER | IDENT )
+                | NUMBER "->" IDENT
 
 attributes_block = "attributes" "{" { attr_decl } "}"
 attr_decl       = IDENT ":" type_expr [ "=" value_expr ]
@@ -188,7 +189,7 @@ attr_assign     = IDENT ":" value_expr
   Pin numbers (when present) must be unique. Sequential gaps are allowed.
 - `features`:
   - `internal` features are informational metadata (e.g. internal clock frequency).
-  - `external` features bind a protocol role to pins. Every line declared in the protocol's role must have a corresponding `pin_mapping`. The `pin` target can be a number (`pin 17`) or a name (`pin PD5`) for named-only pins.
+  - `external` features bind a protocol role to pins. Every line declared in the protocol's role must have a corresponding `pin_mapping`. Two forms are allowed: **line-first** `IDENT -> pin (NUMBER | IDENT)` (e.g. `MOSI -> pin 17` or `MOSI -> pin PD5`) and **pin-first** `NUMBER -> IDENT` (e.g. `3 -> DI`) for components with numbered pins.
 - `attributes`: Typed properties with optional default values. The type name corresponds to a unit quantity (`Resistance`, `Capacitance`, `Voltage`, `Power`, `Percentage`, etc.) or a parameterized type like `VoltageRange(min, max)`.
 
 #### Pin Types Added in v0.2

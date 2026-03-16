@@ -397,6 +397,43 @@ component MCU {
         assert feat.pin_mappings[0].pin_name == "PA1"
         assert feat.pin_mappings[0].pin_number is None
 
+    def test_pin_mapping_pin_number_first(self):
+        """Pin mapping form NUMBER -> IDENT (e.g. 3 -> DI) for numbered pins."""
+        src = """
+protocol SPI {
+    lines { DI DO CLK CS }
+    role slave { DI: Input DO: Output CLK: Input CS: Input }
+}
+component W25Q128JV {
+    pins {
+        1: PowerInput as VCC
+        2: Input as CS
+        3: Input as DI
+        4: Output as DO
+        7: Input as CLK
+    }
+    features {
+        external SPI using protocol SPI role slave {
+            3 -> DI
+            4 -> DO
+            7 -> CLK
+            2 -> CS
+        }
+    }
+}
+"""
+        prog = _parse(src)
+        comp = prog.declarations[1]
+        feat = comp.features[0]
+        assert isinstance(feat, ExternalFeature)
+        assert len(feat.pin_mappings) == 4
+        by_line = {pm.line_name: pm for pm in feat.pin_mappings}
+        assert by_line["DI"].pin_number == 3
+        assert by_line["DO"].pin_number == 4
+        assert by_line["CLK"].pin_number == 7
+        assert by_line["CS"].pin_number == 2
+        assert by_line["DI"].pin_name is None
+
 
 class TestVariant:
     VARIANT_SRC = """
