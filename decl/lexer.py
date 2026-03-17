@@ -117,6 +117,16 @@ class Lexer:
         if ch == '"':
             return self._read_string()
 
+        # Negative number: '-' followed by digit (e.g. TemperatureRange(-40, 85))
+        if ch == "-" and self._peek2().isdigit():
+            neg_loc = self._loc()
+            self._advance()  # consume '-'
+            tok = self._read_number_or_unit()
+            if tok.type == TokenType.NUMBER:
+                return Token(TokenType.NUMBER, -tok.value, neg_loc)
+            # Unit literal after minus (e.g. -5V): treat as invalid for now
+            raise LexError("Negative unit literal not supported", tok.loc)
+
         if ch.isdigit():
             return self._read_number_or_unit()
 

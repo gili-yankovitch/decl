@@ -72,6 +72,15 @@ class TestBasicTokens:
         assert tokens[0].type == TokenType.NUMBER
         assert tokens[0].value == 3.14
 
+    def test_number_negative(self):
+        """Negative integer/float literals (e.g. TemperatureRange(-40, 85))."""
+        tokens = Lexer("-40").tokenize()
+        assert tokens[0].type == TokenType.NUMBER
+        assert tokens[0].value == -40
+        tokens = Lexer("-3.14").tokenize()
+        assert tokens[0].type == TokenType.NUMBER
+        assert tokens[0].value == -3.14
+
     def test_string(self):
         tokens = Lexer('"hello world"').tokenize()
         assert tokens[0].type == TokenType.STRING
