@@ -1,4 +1,4 @@
-# DECL -- Declarative Electronic Component Language
+# DECL -- Declarative Electronic Circuit Language
 
 A domain-specific language for defining electronic components, communication protocols, and circuit schematics with built-in protocol-aware connection validation.
 
