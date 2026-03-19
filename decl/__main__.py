@@ -29,10 +29,33 @@ def main() -> int:
     return 0
 
 
+def _find_stdlib_root(anchor_dir: Path) -> Path | None:
+    """Directory that contains both ``protocols/`` and ``components/`` (DECL stdlib layout).
+
+    Also accepts ``<parent>/stdlib/`` when the repo root holds the library in a subfolder.
+    """
+    anchor_dir = anchor_dir.resolve()
+    for d in [anchor_dir, *anchor_dir.parents]:
+        proto = d / "protocols"
+        comp = d / "components"
+        if proto.is_dir() and comp.is_dir():
+            return d.resolve()
+        nested = d / "stdlib"
+        if (nested / "protocols").is_dir() and (nested / "components").is_dir():
+            return nested.resolve()
+    return None
+
+
 def _resolve_imports(path: Path, program: Program) -> Program:
     """Resolve all import declarations and return a single program with merged declarations.
-    Paths are resolved relative to the importing file's directory. Circular imports raise E001.
+
+    Quoted imports ``import "path"`` resolve relative to the importing file's directory.
+    Bracket imports ``import <path>`` resolve relative to the stdlib root (ancestor of the
+    entry file containing ``protocols/`` and ``components/``).
+
+    Circular imports raise E001.
     """
+    stdlib_root = _find_stdlib_root(path.parent)
     loading: set[Path] = set()
     cache: dict[Path, Program] = {}
 
@@ -55,7 +78,17 @@ def _resolve_imports(path: Path, program: Program) -> Program:
             merged_names = {getattr(d, "name", None) for d in declarations}
             for d in parsed.declarations:
                 if isinstance(d, ImportDecl):
-                    resolved = (current_path.parent / d.path).resolve()
+                    if d.is_system:
+                        if stdlib_root is None:
+                            raise AnalysisError(
+                                "E002",
+                                "System import <...> requires a stdlib root directory "
+                                "(a parent of the file with both 'protocols/' and 'components/')",
+                                d.loc,
+                            )
+                        resolved = (stdlib_root / d.path).resolve()
+                    else:
+                        resolved = (current_path.parent / d.path).resolve()
                     if not resolved.exists():
                         raise AnalysisError(
                             "E002",

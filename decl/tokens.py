@@ -42,6 +42,7 @@ class TokenType(Enum):
     KW_VARIANT = auto()
     KW_OF = auto()
     KW_PINOUT = auto()
+    KW_REQUIRES = auto()
 
     # Pin types (also act as keywords)
     PIN_INPUT = auto()
@@ -67,6 +68,8 @@ class TokenType(Enum):
     EQUALS = auto()       # =
     ARROW = auto()        # ->
     DASH_DASH = auto()    # --
+    STAR = auto()         # *
+    SYSTEM_IMPORT_PATH = auto()  # import <protocols/foo.decl> (path string without brackets)
 
     # Special
     EOF = auto()
@@ -96,6 +99,7 @@ KEYWORDS: dict[str, TokenType] = {
     "variant": TokenType.KW_VARIANT,
     "of": TokenType.KW_OF,
     "pinout": TokenType.KW_PINOUT,
+    "requires": TokenType.KW_REQUIRES,
     # Pin types
     "Input": TokenType.PIN_INPUT,
     "Output": TokenType.PIN_OUTPUT,

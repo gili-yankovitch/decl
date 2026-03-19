@@ -63,6 +63,24 @@ class Lexer:
             chars.append(self._advance())
         raise LexError("Unterminated string literal", loc)
 
+    def _read_system_import_path(self) -> Token:
+        """Path inside ``import <protocols/foo.decl>`` (C++-style system include)."""
+        loc = self._loc()
+        self._advance()  # <
+        chars: list[str] = []
+        while self._pos < len(self._src):
+            c = self._peek()
+            if c == ">":
+                self._advance()
+                path = "".join(chars).strip()
+                if not path:
+                    raise LexError("Empty path in import <...>", loc)
+                return Token(TokenType.SYSTEM_IMPORT_PATH, path, loc)
+            if c == "\n" or c == "<":
+                raise LexError("Unterminated system import path (expected >)", loc)
+            chars.append(self._advance())
+        raise LexError("Unterminated system import path", loc)
+
     def _read_number_or_unit(self) -> Token:
         loc = self._loc()
         start = self._pos
@@ -117,6 +135,9 @@ class Lexer:
         if ch == '"':
             return self._read_string()
 
+        if ch == "<":
+            return self._read_system_import_path()
+
         # Negative number: '-' followed by digit (e.g. TemperatureRange(-40, 85))
         if ch == "-" and self._peek2().isdigit():
             neg_loc = self._loc()
@@ -154,6 +175,7 @@ class Lexer:
             ".": TokenType.DOT,
             ",": TokenType.COMMA,
             "=": TokenType.EQUALS,
+            "*": TokenType.STAR,
         }
         if ch in SINGLE:
             self._advance()

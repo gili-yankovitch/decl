@@ -154,11 +154,21 @@ class AttrDecl:
 
 
 @dataclass
+class RequiresEntry:
+    """``Capacitor { capacitance = 100nF } * 2`` inside a requires block."""
+    component_type: str
+    attributes: list[AttrAssign] = field(default_factory=list)
+    count: int = 1
+    loc: Optional[SourceLocation] = None
+
+
+@dataclass
 class ComponentDef:
     name: str
     pins: list[PinDef] = field(default_factory=list)
     features: list[FeatureDef] = field(default_factory=list)
     attributes: list[AttrDecl] = field(default_factory=list)
+    requires: list[RequiresEntry] = field(default_factory=list)
     loc: Optional[SourceLocation] = None
 
 
@@ -241,6 +251,7 @@ class SchematicDef:
 @dataclass
 class ImportDecl:
     path: str
+    is_system: bool = False
     loc: Optional[SourceLocation] = None
 
 

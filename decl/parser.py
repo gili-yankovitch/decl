@@ -26,6 +26,7 @@ from .ast_nodes import (
     PinRef,
     Program,
     ProtocolDef,
+    RequiresEntry,
     RoleDef,
     RuleStmt,
     SchematicDef,
@@ -131,8 +132,16 @@ class Parser:
     def _parse_import(self) -> ImportDecl:
         loc = self._loc()
         self._eat(TokenType.KW_IMPORT)
-        path_tok = self._eat(TokenType.STRING)
-        return ImportDecl(path=path_tok.value, loc=loc)
+        if self._at(TokenType.STRING):
+            path_tok = self._eat(TokenType.STRING)
+            return ImportDecl(path=path_tok.value, is_system=False, loc=loc)
+        if self._at(TokenType.SYSTEM_IMPORT_PATH):
+            path_tok = self._eat(TokenType.SYSTEM_IMPORT_PATH)
+            return ImportDecl(path=path_tok.value, is_system=True, loc=loc)
+        raise ParseError(
+            f"Expected quoted path or <stdlib/path> after import, got {self._cur().type.name}",
+            self._loc(),
+        )
 
     # ------------------------------------------------------------------
     # Protocol
@@ -249,6 +258,7 @@ class Parser:
         pins: list[PinDef] = []
         features: list[FeatureDef] = []
         attributes: list[AttrDecl] = []
+        requires: list[RequiresEntry] = []
 
         while not self._at(TokenType.RBRACE):
             if self._at(TokenType.KW_PINS):
@@ -257,16 +267,44 @@ class Parser:
                 features = self._parse_features_block()
             elif self._at(TokenType.KW_ATTRIBUTES):
                 attributes = self._parse_attributes_block()
+            elif self._at(TokenType.KW_REQUIRES):
+                requires = self._parse_requires_block()
             else:
                 raise ParseError(
-                    f"Expected 'pins', 'features', or 'attributes' in component body, "
-                    f"got {self._cur().type.name}",
+                    f"Expected 'pins', 'features', 'attributes', or 'requires' "
+                    f"in component body, got {self._cur().type.name}",
                     self._loc(),
                 )
 
         self._eat(TokenType.RBRACE)
         return ComponentDef(
-            name=name, pins=pins, features=features, attributes=attributes, loc=loc
+            name=name, pins=pins, features=features, attributes=attributes,
+            requires=requires, loc=loc,
+        )
+
+    def _parse_requires_block(self) -> list[RequiresEntry]:
+        self._eat(TokenType.KW_REQUIRES)
+        self._eat(TokenType.LBRACE)
+        entries: list[RequiresEntry] = []
+        while not self._at(TokenType.RBRACE):
+            entries.append(self._parse_requires_entry())
+        self._eat(TokenType.RBRACE)
+        return entries
+
+    def _parse_requires_entry(self) -> RequiresEntry:
+        loc = self._loc()
+        comp_type = self._expect_ident()
+        attrs: list[AttrAssign] = []
+        if self._try_eat(TokenType.LBRACE):
+            while not self._at(TokenType.RBRACE):
+                attrs.append(self._parse_instance_attr_assign())
+            self._eat(TokenType.RBRACE)
+        count = 1
+        if self._try_eat(TokenType.STAR):
+            tok = self._eat(TokenType.NUMBER)
+            count = int(tok.value)
+        return RequiresEntry(
+            component_type=comp_type, attributes=attrs, count=count, loc=loc,
         )
 
     def _parse_pins_block(self) -> list[PinDef]:

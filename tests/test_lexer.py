@@ -90,6 +90,13 @@ class TestBasicTokens:
         with pytest.raises(LexError, match="Unterminated string"):
             Lexer('"oops').tokenize()
 
+    def test_system_import_path(self):
+        tokens = Lexer("import <protocols/spi.decl>").tokenize()
+        assert tokens[0].type == TokenType.KW_IMPORT
+        assert tokens[1].type == TokenType.SYSTEM_IMPORT_PATH
+        assert tokens[1].value == "protocols/spi.decl"
+        assert tokens[2].type == TokenType.EOF
+
 
 class TestUnitLiterals:
     def test_resistance(self):

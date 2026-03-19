@@ -93,7 +93,7 @@ Examples: `10kohm`, `100nF`, `4.7uH`, `3.3V`, `500mA`, `0.25W`, `8MHz`, `5%`, `3
 
 ```
 protocol  component  schematic  import
-pins      features   attributes
+pins      features   attributes requires
 internal  external   using      role
 lines     rules      common
 instance  net        connect    wire
@@ -104,8 +104,10 @@ pinout
 ### 2.8 Symbols
 
 ```
-{  }  (  )  :  .  ,  =  ->  --
+{  }  (  )  :  .  ,  =  ->  --  *  <  >
 ```
+
+Imports use ``"..."`` or ``<...>`` around the path (see §3.2).
 
 ---
 
@@ -123,7 +125,13 @@ top_level_decl  = import_decl | protocol_def | component_def | schematic_def
 
 ```
 import_decl     = "import" STRING
+                | "import" "<" import_rel_path ">"
 ```
+
+- **Quoted** ``import "path"``: resolved relative to the **current file’s directory** (like C’s `#include "header"`). Use for project-local and relative paths (e.g. another file next to this one).
+- **Bracket** ``import <path>``: resolved relative to the **stdlib root** — a directory that contains both ``protocols/`` and ``components/`` (like C’s `#include <header>`). Use for standard protocols and shared components shipped in the library.
+
+The ``decl check`` command discovers the stdlib root by walking upward from the file being checked until it finds such a directory.
 
 ### 3.3 Protocol Definition
 
@@ -154,7 +162,7 @@ qual_ident      = IDENT "." IDENT
 
 ```
 component_def   = "component" IDENT "{" { component_body } "}"
-component_body  = pins_block | features_block | attributes_block
+component_body  = pins_block | features_block | attributes_block | requires_block
 
 pins_block      = "pins" "{" { pin_decl } "}"
 pin_decl        = NUMBER ":" pin_type "as" IDENT
@@ -179,6 +187,10 @@ attr_decl       = IDENT ":" type_expr [ "=" value_expr ]
 type_expr       = IDENT [ "(" value_expr { "," value_expr } ")" ]
 value_expr      = UNIT_LITERAL | NUMBER | STRING | IDENT
 attr_assign     = IDENT ":" value_expr
+
+requires_block  = "requires" "{" { requires_entry } "}"
+requires_entry  = IDENT [ "{" { inst_attr_assign } "}" ] [ "*" NUMBER ]
+inst_attr_assign = IDENT "=" value_expr
 ```
 
 **Semantics:**
@@ -191,6 +203,21 @@ attr_assign     = IDENT ":" value_expr
   - `internal` features are informational metadata (e.g. internal clock frequency).
   - `external` features bind a protocol role to pins. Every line declared in the protocol's role must have a corresponding `pin_mapping`. Two forms are allowed: **line-first** `IDENT -> pin (NUMBER | IDENT)` (e.g. `MOSI -> pin 17` or `MOSI -> pin PD5`) and **pin-first** `NUMBER -> IDENT` (e.g. `3 -> DI`) for components with numbered pins.
 - `attributes`: Typed properties with optional default values. The type name corresponds to a unit quantity (`Resistance`, `Capacitance`, `Voltage`, `Power`, `Percentage`, etc.) or a parameterized type like `VoltageRange(min, max)`.
+- `requires`: Declares mandatory support components that this component needs to function correctly. Each entry names a component type, optional attribute overrides in braces (using `=` assignment), and an optional `* N` multiplier for count. The dependency is recursive: if a required component itself has a `requires` block, those entries must also be satisfied. This allows design tools to automatically check that all necessary support parts (decoupling caps, crystals, pull-ups, etc.) are instantiated when this component is used.
+
+**Example:**
+
+```
+component RP2040 {
+    pins { ... }
+    requires {
+        W25Q128JV * 1
+        Capacitor { capacitance = 100nF } * 4
+        Capacitor { capacitance = 10uF } * 1
+        Crystal { frequency = 12MHz } * 1
+    }
+}
+```
 
 #### Pin Types Added in v0.2
 
@@ -328,16 +355,29 @@ The semantic analyzer enforces these rules and produces errors or warnings:
 | W001   | Non-`Unconnected` pin has no connection in the schematic |
 | W002   | `common` net rule not satisfied: instances of the line are on different nets |
 | W003   | Attribute declared without default and not overridden in instance |
+| W004   | Required component type in `requires` block is not defined in the current compilation unit (may be defined in another file) |
 
 ---
 
 ## 6. Import Resolution
 
+**Quoted** imports:
+
 ```
 import "path/to/file.decl"
 ```
 
-Paths are resolved relative to the importing file's directory. The standard library (`stdlib/`) is always on the search path. Circular imports are detected and produce E001.
+The path is resolved relative to the **importing file’s directory**. Implementations may also search the configured stdlib root when the file is not found next to the importer (for tooling convenience).
+
+**Bracket** imports:
+
+```
+import <protocols/spi.decl>
+```
+
+The path is resolved relative to the **stdlib root**: a directory containing both `protocols/` and `components/` subdirectories. The `decl check` tool discovers this root by walking upward from the directory of the file being checked; it also recognizes a `stdlib/` subdirectory at that level (e.g. repo layout `decl/stdlib/...`).
+
+Circular imports are detected and produce E001.
 
 ---
 

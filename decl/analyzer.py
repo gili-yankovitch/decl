@@ -437,6 +437,17 @@ class Analyzer:
             if attr.default is not None:
                 self._check_attr_value_type(attr.type_expr.name, attr.default, attr.loc)
 
+        for req in comp.requires:
+            if req.component_type not in self.components:
+                self.warnings.append(
+                    Warning(
+                        "W004",
+                        f"Required component type '{req.component_type}' in component "
+                        f"'{comp.name}' is not defined (may be defined elsewhere)",
+                        req.loc,
+                    )
+                )
+
     def _check_attr_value_type(
         self, type_name: str, value: object, loc: Optional[SourceLocation]
     ) -> None:

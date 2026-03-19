@@ -46,6 +46,14 @@ class TestImport:
         decl = prog.declarations[0]
         assert isinstance(decl, ImportDecl)
         assert decl.path == "protocols/spi.decl"
+        assert decl.is_system is False
+
+    def test_system_import(self):
+        prog = _parse("import <protocols/spi.decl>")
+        decl = prog.declarations[0]
+        assert isinstance(decl, ImportDecl)
+        assert decl.path == "protocols/spi.decl"
+        assert decl.is_system is True
 
 
 class TestProtocol:
